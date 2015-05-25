@@ -53,6 +53,7 @@ pongular.injector(['app', 'pong-base']).invoke ($watch, $q, fixture, pbRoot, pro
 			.then (email)->
 				console.log 'looking up first profile by email', email
 				profile.by('email',email)
+				.lookup()
 				.then (refs)-> refs[0].once()
 				.then (snap)-> console.log 'profile found:', snap.val()
 	.catch (err)-> console.log err

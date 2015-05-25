@@ -13,7 +13,7 @@ di.module 'pong-base'
 
 .service '$pb', (Firebase, $promise)->
 	class PromiseBase
-		constructor: (@path_or_fb)->
+		constructor: (@path_or_fb,@indexTo)->
 			@fb = (typeof(@path_or_fb)=='string') && new Firebase(@path_or_fb) || @path_or_fb
 
 		# convenience methods
@@ -21,7 +21,7 @@ di.module 'pong-base'
 
 		# general firebase methods
 		key: -> @fb.key()
-		child: (name)-> new PromiseBase(@fb.child(name))
+		child: (name,indexTo)-> new PromiseBase(@fb.child(name),indexTo)
 		on: (args...)-> @fb.on(args...)
 
 		# generic handlers
@@ -42,6 +42,12 @@ di.module 'pong-base'
 		remove: -> @_no_arg 'remove'
 		set: (val)-> @_no_return 'set', val
 		update: (obj)-> @_no_return 'update', obj
+
+		# additional action that converts an index reference into an array of references
+		lookup: ->
+			unless @indexTo then throw 'A promisebase must be created via "by" to be able to lookup with it'
+			@once().then (snap)=> (@indexTo.child(k) for k,v of snap.val())
+
 	(args...)-> new PromiseBase(args...)
 
 
@@ -52,9 +58,7 @@ di.module 'pong-base'
 		name: -> @root.key()
 		all: -> @root.child('all')
 		index: (key)-> @root.child('by').child(key)
-		by: (key,val)->
-			@index(key).child($encodeKey(val)).once().then (snap)=>
-				(@all().child(k) for k,v of snap.val())
+		by: (key,val)-> @index(key).child($encodeKey(val), @all())
 
 	(args...)-> new Model(args...)
 

@@ -19,8 +19,9 @@
   }).service('$pb', function(Firebase, $promise) {
     var PromiseBase;
     PromiseBase = (function() {
-      function PromiseBase(path_or_fb) {
+      function PromiseBase(path_or_fb, indexTo1) {
         this.path_or_fb = path_or_fb;
+        this.indexTo = indexTo1;
         this.fb = (typeof this.path_or_fb === 'string') && new Firebase(this.path_or_fb) || this.path_or_fb;
       }
 
@@ -41,8 +42,8 @@
         return this.fb.key();
       };
 
-      PromiseBase.prototype.child = function(name) {
-        return new PromiseBase(this.fb.child(name));
+      PromiseBase.prototype.child = function(name, indexTo) {
+        return new PromiseBase(this.fb.child(name), indexTo);
       };
 
       PromiseBase.prototype.on = function() {
@@ -104,6 +105,24 @@
         return this._no_return('update', obj);
       };
 
+      PromiseBase.prototype.lookup = function() {
+        if (!this.indexTo) {
+          throw 'A promisebase must be created via "by" to be able to lookup with it';
+        }
+        return this.once().then((function(_this) {
+          return function(snap) {
+            var k, ref, results, v;
+            ref = snap.val();
+            results = [];
+            for (k in ref) {
+              v = ref[k];
+              results.push(_this.indexTo.child(k));
+            }
+            return results;
+          };
+        })(this));
+      };
+
       return PromiseBase;
 
     })();
@@ -148,18 +167,7 @@
       };
 
       Model.prototype.by = function(key, val) {
-        return this.index(key).child($encodeKey(val)).once().then((function(_this) {
-          return function(snap) {
-            var k, ref, results, v;
-            ref = snap.val();
-            results = [];
-            for (k in ref) {
-              v = ref[k];
-              results.push(_this.all().child(k));
-            }
-            return results;
-          };
-        })(this));
+        return this.index(key).child($encodeKey(val), this.all());
       };
 
       return Model;
