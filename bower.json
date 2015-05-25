@@ -1,6 +1,6 @@
 {
   "name": "pong-base",
-  "main": "browser-index.js",
+  "main": ["browser/index.js","shared/index.js"],
   "version": "0.0.0",
   "homepage": "https://github.com/sdebaun/pong-base",
   "authors": [
