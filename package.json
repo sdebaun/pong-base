@@ -1,0 +1,27 @@
+{
+  "name": "pong-base",
+  "version": "0.0.1",
+  "description": "node/pongular module providing firebase promise-wrapping, q sugar, lightweight ORM with indexes",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/sdebaun/pong-base.git"
+  },
+  "author": "'sdebaun' <'sdebaun74@gmail.com'>",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/sdebaun/pong-base/issues"
+  },
+  "homepage": "https://github.com/sdebaun/pong-base",
+  "dependencies": {
+    "firebase": "^2.2.4",
+    "pongular": "0.0.6",
+    "q": "^1.4.0"
+  },
+  "devDependencies": {
+    "faker": "^2.1.3"
+  }
+}
