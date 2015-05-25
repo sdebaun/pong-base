@@ -59,7 +59,7 @@ di.module 'pong-base'
 		all: -> @root.child('all')
 		index: (key)-> @root.child('by').child(key)
 		by: (key,val)-> @index(key).child($encodeKey(val), @all())
-		id: (key)->@all.child($encodeKey(key))
+		byKey: (key)->@all().child($encodeKey(key))
 
 	(args...)-> new Model(args...)
 

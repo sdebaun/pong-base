@@ -170,8 +170,8 @@
         return this.index(key).child($encodeKey(val), this.all());
       };
 
-      Model.prototype.id = function(key) {
-        return this.all.child($encodeKey(key));
+      Model.prototype.byKey = function(key) {
+        return this.all().child($encodeKey(key));
       };
 
       return Model;
