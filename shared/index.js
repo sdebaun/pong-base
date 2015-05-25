@@ -4,7 +4,7 @@
 
   di = (typeof window !== 'undefined') && window.angular || require('pongular').pongular;
 
-  di.module('pong-base').service('PBShared', function() {
+  di.module('pong-base').value('PBShared', function() {
     return 'Something both sides share';
   });
 
