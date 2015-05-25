@@ -1,6 +1,6 @@
 pongular = require('pongular').pongular
 
-pongular.module 'pong-base', []
+pongular.module 'pong-base'
 
 .service '$firebase', ->
 	Firebase = require 'firebase'
@@ -67,11 +67,26 @@ pongular.module 'pong-base', []
 .service 'indexer', ($encodeKey)->
 	class Indexer
 		constructor: (@model,@field)->
+		addIndexItem: (index_key,item_key)->
+			@model.index(@field).child($encodeKey(index_key)).child(item_key).set true
+		removeIndexItem: (index_key,item_key)->
+			@model.index(@field).child($encodeKey(index_key)).child(item_key).remove()
 		update: (snap)->
-			index_key = $encodeKey(snap.val()[@field])
-			@model.index(@field).child(index_key).child(snap.ref().key()).set true
+			rec = snap.val()
+			new_index_key = rec[@field]; old_index_key = rec[@field + "_old"]; item_key = snap.ref().key()
+			return if (typeof(new_index_key)=='null') || (new_index_key==old_index_key)
+			@addIndexItem new_index_key, item_key
+			@removeIndexItem old_index_key, item_key
+			snap.ref().child(@field+"_old").set new_index_key
+			# console.log 'updated index', @model.name(), @field, item_key, new_index_key, old_index_key
+		remove: (snap)->
+			old_index_key = snap.val()[@field]
+			return if typeof(old_index_key)=='null'
+			@removeIndexItem old_index_key, snap.ref().key()
 		start: ->
 			@model.all().on 'child_added', (snap)=>@update(snap)
+			@model.all().on 'child_changed', (snap)=>@update(snap)
+			@model.all().on 'child_removed', (snap)=>@remove(snap)
 
 .service '$watch', ->
 	(model)->

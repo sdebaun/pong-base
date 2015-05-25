@@ -6,6 +6,10 @@
 
   di.module('pong-base').value('PBShared', function() {
     return 'Something both sides share';
+  }).service('$encodeKey', function() {
+    return function(key) {
+      return encodeURIComponent(key).replace(/\./g, '%2E');
+    };
   });
 
 }).call(this);
