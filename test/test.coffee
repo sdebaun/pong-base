@@ -2,7 +2,6 @@ pongular = require('pongular').pongular;
 
 
 require '../index' # pong-base
-# require '../node/index' # pong-base
 
 pongular.module 'app', ['pong-base']
 .service 'pbRoot', ($pb)-> $pb "https://guildbook.firebaseio.com/"
