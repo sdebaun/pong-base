@@ -5,13 +5,14 @@ di.module 'pong-base'
 .service '$encodeKey', ->
 	(key)-> encodeURIComponent(key).replace(/\./g, '%2E')
 
-.service '$promise', ($q)->
+.service '$promise', ['$q', ($q)->
 	(fn)->
 		d = $q.defer()
 		fn(d)
 		d.promise
+]
 
-.service '$pb', (Firebase, $promise)->
+.service '$pb', ['Firebase', '$promise', (Firebase, $promise)->
 	class PromiseBase
 		constructor: (@path_or_fb,@indexTo)->
 			@fb = (typeof(@path_or_fb)=='string') && new Firebase(@path_or_fb) || @path_or_fb
@@ -49,9 +50,9 @@ di.module 'pong-base'
 			@once().then (snap)=> (@indexTo.child(k) for k,v of snap.val())
 
 	(args...)-> new PromiseBase(args...)
+]
 
-
-.service '$model', ($encodeKey, indexer)->
+.service '$model', ['$encodeKey', 'indexer', ($encodeKey, indexer)->
 	class Model
 		constructor: (@root,@index_fields)->
 			@indexers = (new indexer(@,field) for field in @index_fields)
@@ -62,8 +63,9 @@ di.module 'pong-base'
 		byKey: (key)->@all().child($encodeKey(key))
 
 	(args...)-> new Model(args...)
+]
 
-.service 'indexer', ($encodeKey)->
+.service 'indexer', ['$encodeKey', ($encodeKey)->
 	class Indexer
 		constructor: (@model,@field)->
 		addIndexItem: (index_key,item_key)->
@@ -86,7 +88,7 @@ di.module 'pong-base'
 			@model.all().on 'child_added', (snap)=>@update(snap)
 			@model.all().on 'child_changed', (snap)=>@update(snap)
 			@model.all().on 'child_removed', (snap)=>@remove(snap)
-
+]
 
 
 	# (fb,init)->
