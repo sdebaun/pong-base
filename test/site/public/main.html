@@ -1,0 +1,12 @@
+<button login='google' ng-hide='auth.uid'>Login</button>
+<div ng-show='auth.uid'>
+Welcome, {{user.displayName}} [{{auth.uid}}] <button logout ng-show='auth.uid'>Logout</button>
+</div>
+<h2>Your Profile</h2>
+<div model='Profile' with='auth.uid'>
+	Profile: {{Profile}}
+</div>
+<h2>Other Profiles</h2>
+<div model='Profile' limit='10'>
+	Another Profile: {{Profile}}
+</div>

@@ -1,6 +1,6 @@
 pongular = require('pongular').pongular
 
-pongular.module 'pong-base'
+pongular.module 'pong-base' , []
 
 # stand-ins for services that exist in browser
 .service 'Firebase', -> require 'firebase'
@@ -9,7 +9,4 @@ pongular.module 'pong-base'
 
 # used on a server to turn on index watchers
 .service '$watch', ->
-	(model)->
-		for indexer in model.indexers
-			indexer.start()
-			console.log 'started index watcher for', indexer.model.name(), indexer.field
+	(model)-> console.log 'starting watchers for', model.name()
