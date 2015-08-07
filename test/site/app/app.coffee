@@ -35,12 +35,11 @@ angular.module 'app', [
 .service 'ProfileBuilder', ->
 
   google: (auth)->
-    console.log 'Building profile from google auth'
-    nameFirst: auth.google.cachedUserProfile.given_name
-    nameLast: auth.google.cachedUserProfile.family_name
-    email: auth.google.email
     uid: auth.uid
-    profilePicUrl: auth.google.profileImageURL
+    name_first: auth.google.cachedUserProfile.given_name
+    name_last: auth.google.cachedUserProfile.family_name
+    email: auth.google.email
+    profile_pic_url: auth.google.profileImageURL
 
   facebook: (auth)->
-    auth
+    uid: auth.uid

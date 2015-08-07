@@ -69,12 +69,12 @@ Define `$model`s in your `.shared` code to get:
 # defined somewhere else...
 # .service 'fbRoot', -> new Firebase("MY_FIREBASE_URL")
 
-.service 'Profile', ['$model', 'fbRoot', ($model, fbRoot)->
-  $model fbRoot.child('profile')
+.service 'Site', ['$model', 'fbRoot', ($singleton, fbRoot)->
+  $singleton fbRoot.child('site')
 ]
 
-.service 'Site', ['$model', 'fbRoot', ($model, fbRoot)->
-  $model fbRoot.child('site')
+.service 'Profile', ['$model', 'fbRoot', ($model, fbRoot)->
+  $model fbRoot.child('profile')
 ]
 
 .service 'Objective', ['$model', 'fbRoot', ($model, fbRoot)->

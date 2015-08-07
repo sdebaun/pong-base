@@ -208,6 +208,9 @@ di.module('pong-base').service('$encodeKey', function() {
           }
           return query = query.limitToFirst(limitTo || 1);
         };
+        ref.single = function() {
+          return fbRef.child('SINGLE');
+        };
         return ref;
       };
       return decorate(fbRef);

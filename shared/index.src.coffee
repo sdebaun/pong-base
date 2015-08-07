@@ -36,6 +36,7 @@ di.module 'pong-base'
         unless withValue || byChild || limitTo then query = query.equalTo 'SINGLE'
         query = query.limitToFirst(limitTo||1)
 
+      ref.single = -> fbRef.child('SINGLE')
       ref
 
     decorate fbRef

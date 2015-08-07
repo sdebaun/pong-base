@@ -22,6 +22,7 @@ BROWSER_SPECS = ['./browser/*.spec.coffee', './shared/*.spec.coffee']
 NODE_FILES = ['./node/*.src.coffee', './shared/*.src.coffee']
 NODE_SPECS = ['./node/*.spec.coffee', './shared/*.spec.coffee']
 APP_FILES = ['./test/site/app/*.coffee']
+SERVER_FILES = ['./test/site/*.coffee']
 STYLUS_FILES = ['./test/site/**/*.styl']
 
 gulp.task 'default', ['tdd']
@@ -54,7 +55,7 @@ gulp.task 'node:compile', ->
 gulp.task 'serve', ['server:seed'], ->
 	server.listen {path: './test/site/listen.coffee'}, livereload.listen
 	gulp.watch [BROWSER_FILES..., BROWSER_SPECS..., NODE_FILES..., NODE_SPECS..., APP_FILES..., STYLUS_FILES...], ['server:build']
-	gulp.watch ['./test/site/public/*']
+	gulp.watch ['./test/site/public/*', SERVER_FILES...]
 	.on 'change', (file)->
 		server.changed (err)->
 			unless err then livereload.changed(file.path)

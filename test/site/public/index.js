@@ -208,6 +208,9 @@ di.module('pong-base').service('$encodeKey', function() {
           }
           return query = query.limitToFirst(limitTo || 1);
         };
+        ref.single = function() {
+          return fbRef.child('SINGLE');
+        };
         return ref;
       };
       return decorate(fbRef);
@@ -252,17 +255,18 @@ angular.module('app', ['ui.router', 'pong-base', 'firebase']).service('fbRoot', 
 }).service('ProfileBuilder', function() {
   return {
     google: function(auth) {
-      console.log('Building profile from google auth');
       return {
-        nameFirst: auth.google.cachedUserProfile.given_name,
-        nameLast: auth.google.cachedUserProfile.family_name,
-        email: auth.google.email,
         uid: auth.uid,
-        profilePicUrl: auth.google.profileImageURL
+        name_first: auth.google.cachedUserProfile.given_name,
+        name_last: auth.google.cachedUserProfile.family_name,
+        email: auth.google.email,
+        profile_pic_url: auth.google.profileImageURL
       };
     },
     facebook: function(auth) {
-      return auth;
+      return {
+        uid: auth.uid
+      };
     }
   };
 });
@@ -271,13 +275,13 @@ var di;
 
 di = typeof window !== 'undefined' ? window.angular : require('pongular').pongular;
 
-di.module('app').service('Profile', [
-  '$model', 'fbRoot', function($model, fbRoot) {
-    return $model(fbRoot.child('profile'));
-  }
-]).service('Site', [
+di.module('app').service('Site', [
   '$model', 'fbRoot', function($model, fbRoot) {
     return $model(fbRoot.child('site'));
+  }
+]).service('Profile', [
+  '$model', 'fbRoot', function($model, fbRoot) {
+    return $model(fbRoot.child('profile'));
   }
 ]).service('Objective', [
   '$model', 'fbRoot', function($model, fbRoot) {
