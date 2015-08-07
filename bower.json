@@ -1,7 +1,7 @@
 {
   "name": "pong-base",
-  "main": ["browser/index.js","shared/index.js"],
-  "version": "0.0.0",
+  "main": "browser.js",
+  "version": "0.0.3",
   "homepage": "https://github.com/sdebaun/pong-base",
   "authors": [
     "Stevo <sdebaun@sparks.network>"
@@ -17,14 +17,15 @@
   "license": "MIT",
   "ignore": [
     "**/.*",
-    "node_modules",
-    "bower_components",
-    "test",
     "**/*.coffee",
+    "bower_components",
+    "browser",
     "node",
-    "tests"
+    "node_modules",
+    "shared",
+    "test"
   ],
   "dependencies": {
-    "angularfire": "~1.1.1"
+    "angularfire": "~1.1.2"
   }
 }

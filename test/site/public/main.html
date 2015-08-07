@@ -1,5 +1,5 @@
 <div collection='Event' by='is_public' with='true' limit='10' ng-show='Events_loaded'>
-	<h2>Event (Collection)</h2>
+	<h2>Public Events</h2>
 	Showing {{Events.length}} events.
 	<div ng-repeat='Event in Events' style='margin-top: 0.em; border-top: 1px solid #999'>
 		<h3><a href='#' ui-sref='authed.event({event_id:Event.$id})'>{{Event.name}}</a></h3>

@@ -2,7 +2,7 @@
   "name": "pong-base",
   "version": "0.0.3",
   "description": "Streamlined and consistent firebase use in node (w/ pongular) and the browser.  Shared code, promises, e-z directives.",
-  "main": "index.js",
+  "main": "node.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
