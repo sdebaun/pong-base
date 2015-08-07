@@ -52,19 +52,20 @@ angular.module 'pong-base', ['firebase']
     modelName = attrs.as || (attrs.collection + 's')
     model = $injector.get(attrs.collection)
 
-    watch_attr_val = (attr_val)->
-      scope.$watch attr_val, ->
-        evalWith = scope.$eval(attrs.with)
-        if (evalWith && !attrs.by)
-          scope[modelName] = null
-          scope[modelName+"_loaded"] = false
-        else
-          scope[modelName] = $firebaseArray model.buildQuery( attrs.by, scope.$eval(attrs.with), scope.$eval(attrs.limit) )
-          scope[modelName+"_loaded"] = scope[modelName].$loaded()
+    update_scope = ->
+      if attrs.with == 'true' then attrs.with = true # hackery
+      if attrs.with == 'false' then attrs.with = false
+      if attrs.with && !attrs.by
+        scope[modelName] = null
+        scope[modelName+"_loaded"] = false
+      else
+        withValue = attrs.alsoWith && [attrs.with,attrs.alsoWith].join('|') || attrs.with
+        scope[modelName] = $firebaseArray model.buildQuery( attrs.by, withValue, scope.$eval(attrs.limit) )
+        scope[modelName+"_loaded"] = scope[modelName].$loaded()
 
-    attrs.$observe 'by', -> watch_attr_val(attrs.by)
-    attrs.$observe 'with', -> watch_attr_val(attrs.with)
-    attrs.$observe 'limit', -> watch_attr_val(attrs.limit)
+    attrs.$observe 'by', update_scope
+    attrs.$observe 'with', update_scope
+    attrs.$observe 'limit', update_scope
 ]
 
 .directive 'model', ['$compile', '$injector', '$parse', '$firebaseObject', '$firebaseArray', ($compile, $injector, $parse, $firebaseObject, $firebaseArray)->
@@ -76,14 +77,11 @@ angular.module 'pong-base', ['firebase']
     oldBy = oldWith = oldLimit = null # to prevent multiple-creation of query at beginning
 
     update_scope = (args...)->
-      # console.log 'update_scope', args
       return if (attrs.by == oldBy) && (attrs.with == oldWith) && (attrs.limit == oldLimit)
       if (attrs.by && !attrs.with) then scope[modelName] = null
       else # some hackery with a $fbA translating to a $fbO so we dont have to ng-repeat
-        # console.log 'build query on', modelName, ':', attrs.by, attrs.with, 1
         scope[modelName+'s'] = $firebaseArray model.buildQuery( attrs.by, attrs.with, 1 )
         scope[modelName+'s'].$watch (result)->
-          # console.log '$fbA changed', result.event, result.key, result.prevChild
           if result.event == 'child_removed'
             scope[modelName] = null
             scope[modelName+"_loaded"] = false

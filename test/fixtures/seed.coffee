@@ -44,11 +44,17 @@ pongular.module 'app'
 	eventOwner: (event,profile)->
 		profile_key: profile.key()
 		event_key: event.key()
+	ob: (event,profile)->
+		profile_key: profile.key()
+		event_key: event.key()
+		name: faker.company.catchPhrase()
+		is_complete: pick([true,false])
+		karma_reward: faker.random.number(100)
 
 .service 'pick', ->
 	(arr)-> arr[Math.floor(Math.random()*arr.length)]
 
-pongular.injector(['app', 'pong-base']).invoke ($q, fixture, fbRoot, Profile, Event, EventOwner, pick, $promise)->
+pongular.injector(['app', 'pong-base']).invoke ($q, fixture, fbRoot, Profile, Event, EventOwner, Ob, pick, $promise)->
 	$promise (d)-> fbRoot.remove( d.resolve )
 	.then ->
 		console.log 'all data removed from firebase'
@@ -63,6 +69,9 @@ pongular.injector(['app', 'pong-base']).invoke ($q, fixture, fbRoot, Profile, Ev
 			console.log "#{events.length} events generated"
 			$q.all (EventOwner.promise.push(fixture.eventOwner(e,pick(profiles))) for e in events)
 			.then (eventOwners)-> console.log "#{eventOwners.length} owners assigned"
+			.then ->
+				$q.all (Ob.promise.push(fixture.ob(pick(events),pick(profiles))) for i in [1..100])
+				.then (obs)-> console.log "#{obs.length} obligations assigned"
 	.catch (err)-> console.log "Err", err
 	.finally -> process.exit()
 

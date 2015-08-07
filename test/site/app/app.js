@@ -7,7 +7,7 @@ angular.module('app', ['ui.router', 'pong-base', 'firebase']).service('fbRoot', 
   return $stateProvider.state('authed', {
     abstract: true,
     url: '',
-    template: '<div ui-view></div>',
+    template: '<div model=\'Site\' with=\'SINGLE\'>\n<div model=\'Profile\' as=\'UserProfile\' by=\'uid\' with=\'{{auth.uid}}\'>\n  <appbar></appbar><profilebar></profilebar>\n  <div ui-view></div>\n</div></div>',
     resolve: {
       authed: [
         'fbAuth', function(fbAuth) {
@@ -31,6 +31,14 @@ angular.module('app', ['ui.router', 'pong-base', 'firebase']).service('fbRoot', 
   }).state('authed.main', {
     url: '/',
     templateUrl: 'main.html'
+  }).state('authed.event', {
+    url: '/event/:event_id',
+    templateUrl: 'event.html',
+    controller: [
+      '$scope', '$stateParams', function($scope, $stateParams) {
+        return $scope.event_id = $stateParams.event_id;
+      }
+    ]
   });
 }).service('ProfileBuilder', function() {
   return {
@@ -49,6 +57,16 @@ angular.module('app', ['ui.router', 'pong-base', 'firebase']).service('fbRoot', 
       };
     }
   };
+}).directive('appbar', function() {
+  return {
+    restrict: 'E',
+    template: '<div class=\'navbar container\'>\n  <div><a href=\'#\' ui-sref=\'authed.main()\'>My App!</a></div>\n  <div>{{Site.profile_count}} total profiles.  {{Site.event_count}} total events.  {{Site.karma_earned_total}} total karma earned.</div>\n  <div ng-hide=\'auth.uid\'>\n    <button login=\'google\' method=\'popup\'>Login w Popup</button>\n    <button login=\'google\'>Login w Redirect</button>\n  </div>\n  <div ng-show=\'auth.uid && UserProfile_loaded\'>\n    NAME: {{UserProfile.name_first}} {{UserProfile.name_last}}\n    UID: {{auth.uid}}\n    <button logout ng-show=\'auth.uid\'>Logout</button>\n  </div>\n  <hr/>\n</div>'
+  };
+}).directive('profilebar', function() {
+  return {
+    restrict: 'E',
+    template: '<div class=\'user container\' ng-show=\'UserProfile_loaded\'>\n  <h2>Your Profile (model directive)</h2>\n  <img ng-src=\'{{UserProfile.profile_pic_url}}\' width=64 height=64 style=\'border-radius: 32px\'/>\n  <h3>{{UserProfile.name_first}} {{UserProfile.name_last}}</h3>\n</div>'
+  };
 });
 
 var di;
@@ -63,13 +81,9 @@ di.module('app').service('Site', [
   '$model', 'fbRoot', function($model, fbRoot) {
     return $model(fbRoot.child('profile'));
   }
-]).service('Objective', [
+]).service('Ob', [
   '$model', 'fbRoot', function($model, fbRoot) {
-    return $model(fbRoot.child('objective'));
-  }
-]).service('ObjectiveAssigned', [
-  '$model', 'fbRoot', function($model, fbRoot) {
-    return $model(fbRoot.child('objectiveAssigned'));
+    return $model(fbRoot.child('ob'));
   }
 ]).service('Event', [
   '$model', 'fbRoot', function($model, fbRoot) {

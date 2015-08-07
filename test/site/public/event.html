@@ -1,0 +1,35 @@
+<div model='Event' with='{{event_id}}'>
+	<h1>{{Event.name}}</h1>
+	<img ng-src='{{Event.card_pic}}' width=128 height=128/>
+	<div collection='EventOwner' by='event_key' with='{{Event.$id}}'>
+		<h3>Event Owners</h3>
+		<div ng-repeat='EventOwner in EventOwners' model='Profile' with='{{EventOwner.profile_key}}'>
+			<hr/>
+			<img ng-src='{{Profile.profile_pic_url}}' width=32 height=32 style='border-radius: 16px;'/>
+			{{Profile.name_first}} {{Profile.name_last}} ({{Profile.karma_earned}})
+		</div>
+	</div>
+	<div collection='Ob' by='event_complete' with='{{Event.$id}}' also-with='false' limit='10'>
+		<h3>Open Obs ({{Event.ob_count - Event.ob_completed_count}})</h3>
+		<div ng-repeat='Ob in Obs'>
+			<div model='Profile' with='{{Ob.profile_key}}'>
+				<hr/>
+				<b>{{Ob.name}} ({{Ob.karma_reward}})</b>
+				<img ng-src='{{Profile.profile_pic_url}}' width=32 height=32 style='border-radius: 16px;'/>
+				{{Profile.name_first}} {{Profile.name_last}} ({{Profile.karma_earned}})
+			</div>
+		</div>
+	</div>
+	<hr/>
+	<div collection='Ob' by='event_complete' with='{{Event.$id}}' also-with='true' limit='10'>
+		<h3>Completed Obs ({{Event.ob_completed_count}})</h3>
+		<div ng-repeat='Ob in Obs'>
+			<div model='Profile' with='{{Ob.profile_key}}'>
+				<hr/>
+				<b>{{Ob.name}} ({{Ob.karma_reward}})</b>
+				<img ng-src='{{Profile.profile_pic_url}}' width=32 height=32 style='border-radius: 16px;'/>
+				{{Profile.name_first}} {{Profile.name_last}} ({{Profile.karma_earned}})
+			</div>
+		</div>
+	</div>
+</div>

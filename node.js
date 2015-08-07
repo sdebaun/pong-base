@@ -1,4 +1,5 @@
-var pongular;
+var pongular,
+  slice = [].slice;
 
 pongular = require('pongular').pongular;
 
@@ -6,10 +7,10 @@ pongular.module('pong-base', []).service('Firebase', function() {
   return require('firebase');
 }).service('$q', function() {
   return require('q');
-}).service('$modelManager', function(startCounterHandler) {
+}).service('$modelManager', function(startCounterHandler, startCompositeHandler) {
   return function(model, options) {
     model.listen = function() {
-      var counter_name, counter_options, ref, results;
+      var composite_fields, composite_name, counter_name, counter_options, ref, ref1, results;
       console.log('listening to', model.key());
       if (options.timestamp) {
         model.orderByChild('created_on').equalTo(null).on('child_added', function(snap) {
@@ -25,20 +26,48 @@ pongular.module('pong-base', []).service('Firebase', function() {
         });
       }
       ref = options.counters;
-      results = [];
       for (counter_name in ref) {
         counter_options = ref[counter_name];
-        results.push(startCounterHandler(model, counter_name, counter_options));
+        startCounterHandler(model, counter_name, counter_options);
+      }
+      ref1 = options.composites;
+      results = [];
+      for (composite_name in ref1) {
+        composite_fields = ref1[composite_name];
+        results.push(startCompositeHandler(model, composite_name, composite_fields));
       }
       return results;
     };
     return model;
   };
+}).service('startCompositeHandler', function() {
+  return function(model, composite_name, fields) {
+    var update_handler;
+    console.log.apply(console, ['COMPOSITE: adding index builder to', model.key(), 'named', composite_name, 'with fields'].concat(slice.call(fields)));
+    update_handler = function(snap) {
+      var f, new_composite_value, rec;
+      rec = snap.val();
+      new_composite_value = ((function() {
+        var i, len, results;
+        results = [];
+        for (i = 0, len = fields.length; i < len; i++) {
+          f = fields[i];
+          results.push(rec[f]);
+        }
+        return results;
+      })()).join('|');
+      if (rec[composite_name] !== new_composite_value) {
+        return snap.ref().child(composite_name).set(new_composite_value);
+      }
+    };
+    model.on('child_added', update_handler);
+    return model.on('child_changed', update_handler);
+  };
 }).service('startCounterHandler', function(updateAllTargetCounters, getTargetRefs, updateTargetCounter) {
   return function(model, counter_name, counter_options) {
     var counted_old_field, field, query, ref, remove_handler, update_handler, value;
     counted_old_field = counter_name + '_counted';
-    console.log('adding counter to', model.key(), 'countif', counter_options.countIf, 'named', counter_name);
+    console.log('COUNTER: adding to', model.key(), 'countif', counter_options.countIf, 'named', counter_name);
     update_handler = function(snap, evtname) {
       var count_value_new, rec;
       rec = snap.val();

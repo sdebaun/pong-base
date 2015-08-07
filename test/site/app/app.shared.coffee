@@ -10,12 +10,8 @@ di.module 'app'
   $model fbRoot.child('profile')
 ]
 
-.service 'Objective', ['$model', 'fbRoot', ($model, fbRoot)->
-  $model fbRoot.child('objective')
-]
-
-.service 'ObjectiveAssigned', ['$model', 'fbRoot', ($model, fbRoot)->
-  $model fbRoot.child('objectiveAssigned')
+.service 'Ob', ['$model', 'fbRoot', ($model, fbRoot)->
+  $model fbRoot.child('ob')
 ]
 
 .service 'Event', ['$model', 'fbRoot', ($model, fbRoot)->

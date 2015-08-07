@@ -251,25 +251,20 @@ In this case:
 
 Show a logged in user's profile (found with auth.uid scope variable) and outstanding objectives and Events they're members of.
 
+Specify an `also-with` and the `collection` directive knows you're filtering by a composite key.  Name the composite key in your `by` attribute just like any other index.
+
 ```html
-<div model='Site'>
-  <div model='Profile' by='uid' with='{{auth.uid}}' limit='1'>
-    <h1>{{profile.name}}</h1>
-    <h2>Karma: {{profile.karma_earned}}</h2>
-    <span>Total karma on site: {{site.karma_earned_total}}</span>
-
-    <h3>My Objectives</h3>
-
-    <div model='ObjectiveAssignment' by='profile_complete' with='[profile.$key,false]'>
-      {{objectiveAssignment.name}}: {{objectiveAssignment.karma_reward}} karma
-    </div>
-
-    <h3>My Events</h3>
-
-    <div model='EventMember' by='profile_key' with='profile.$key'>
-      <div model='Event' key='EventMember.Event_key'>
-        <h4>{{Event.name}}</h4>
-        <span>Member since {{EventMember.created_on}}</span>
+<!-- an event_id is set on the $scope from $stateParams -->
+<div model='Event' with='{{event_id}}'>
+  <h1>{{Event.name}}</h1>
+  <div collection='Ob' by='event_complete' with='{{Event.$id}}' also-with='false' limit='10'>
+    <h3>Open Obs</h3>
+    <div ng-repeat='Ob in Obs'>
+      <div model='Profile' with='{{Ob.profile_key}}'>
+        <b>{{Ob.name}} ({{Ob.karma_reward}})</b>
+        <img ng-src='{{Profile.profile_pic_url}}' width=32 height=32 style='border-radius: 16px;'/>
+        {{Profile.name_first}} {{Profile.name_last}} ({{Profile.karma_earned}})
+      </div>
     </div>
   </div>
 </div>

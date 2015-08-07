@@ -7,7 +7,7 @@ pongular.module 'pong-base' , []
 
 .service '$q', -> require 'q'
 
-.service '$modelManager', (startCounterHandler)->
+.service '$modelManager', (startCounterHandler, startCompositeHandler)->
 	(model, options)->
 		model.listen = ->
 			console.log 'listening to', model.key()
@@ -22,12 +22,24 @@ pongular.module 'pong-base' , []
 					snap.ref().child('is_initialized').set( new Date().getTime() )
 			for counter_name, counter_options of options.counters
 				startCounterHandler(model, counter_name, counter_options)
+			for composite_name, composite_fields of options.composites
+				startCompositeHandler(model, composite_name, composite_fields)
 		model
+
+.service 'startCompositeHandler', ->
+	(model, composite_name, fields)->
+		console.log 'COMPOSITE: adding index builder to', model.key(), 'named', composite_name, 'with fields', fields...
+		update_handler = (snap)->
+			rec = snap.val()
+			new_composite_value = (rec[f] for f in fields).join('|')
+			if rec[composite_name] != new_composite_value then snap.ref().child(composite_name).set new_composite_value
+		model.on 'child_added', update_handler
+		model.on 'child_changed', update_handler
 
 .service 'startCounterHandler', (updateAllTargetCounters, getTargetRefs, updateTargetCounter)->
 	(model, counter_name, counter_options)->
 		counted_old_field = counter_name+'_counted'
-		console.log 'adding counter to', model.key(), 'countif', counter_options.countIf, 'named', counter_name
+		console.log 'COUNTER: adding to', model.key(), 'countif', counter_options.countIf, 'named', counter_name
 
 		update_handler = (snap,evtname)->
 			# console.log evtname, 'handler triggered on', model.key(), snap.key()

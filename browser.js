@@ -84,31 +84,29 @@ angular.module('pong-base', ['firebase']).service('fbAuth', [
       restrict: 'A',
       scope: true,
       link: function(scope, el, attrs) {
-        var model, modelName, watch_attr_val;
+        var model, modelName, update_scope;
         modelName = attrs.as || (attrs.collection + 's');
         model = $injector.get(attrs.collection);
-        watch_attr_val = function(attr_val) {
-          return scope.$watch(attr_val, function() {
-            var evalWith;
-            evalWith = scope.$eval(attrs["with"]);
-            if (evalWith && !attrs.by) {
-              scope[modelName] = null;
-              return scope[modelName + "_loaded"] = false;
-            } else {
-              scope[modelName] = $firebaseArray(model.buildQuery(attrs.by, scope.$eval(attrs["with"]), scope.$eval(attrs.limit)));
-              return scope[modelName + "_loaded"] = scope[modelName].$loaded();
-            }
-          });
+        update_scope = function() {
+          var withValue;
+          if (attrs["with"] === 'true') {
+            attrs["with"] = true;
+          }
+          if (attrs["with"] === 'false') {
+            attrs["with"] = false;
+          }
+          if (attrs["with"] && !attrs.by) {
+            scope[modelName] = null;
+            return scope[modelName + "_loaded"] = false;
+          } else {
+            withValue = attrs.alsoWith && [attrs["with"], attrs.alsoWith].join('|') || attrs["with"];
+            scope[modelName] = $firebaseArray(model.buildQuery(attrs.by, withValue, scope.$eval(attrs.limit)));
+            return scope[modelName + "_loaded"] = scope[modelName].$loaded();
+          }
         };
-        attrs.$observe('by', function() {
-          return watch_attr_val(attrs.by);
-        });
-        attrs.$observe('with', function() {
-          return watch_attr_val(attrs["with"]);
-        });
-        return attrs.$observe('limit', function() {
-          return watch_attr_val(attrs.limit);
-        });
+        attrs.$observe('by', update_scope);
+        attrs.$observe('with', update_scope);
+        return attrs.$observe('limit', update_scope);
       }
     };
   }
