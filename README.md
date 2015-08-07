@@ -4,8 +4,33 @@ Coordinate client and server firebase use with shared code and easy server-side 
 
 ## installation
 
+You need to install this twice: once for your node server, and once for your angular client.  You'll also need pongular if you don't already have it.
+
 ```bash
-$ npm install [THIS REPO URL]
+$ npm install --save pongular pong-base
+```
+
+```bash
+$ bower install --save pong-base
+```
+
+The npm and bower packages contain everything your app needs on the server and client respectively.
+
+Then in both environments, you'll need to specify the `pong-base` module as a dependency:
+
+```coffee
+# on the client
+angular.module 'app', [
+  'pong-base'
+]
+
+```
+
+```coffee
+# on the server
+pongular.module 'app', [
+  'pong-base'
+]
 ```
 
 ## overview
@@ -14,23 +39,25 @@ There are several parts to pongbase that you use together to streamline firebase
 
 * `$model`.  You'll create services that are used by both the angular client and server to refer to a specific part of the data.
 * `$modelManager`.  Server-side pongular services give you an easy way to write back-end behavior that must be secure.
-* `model` directive.  Use this in your angular client wherever you need to retreive data.
+* `collection` and `model` directives.  Use these in your angular client wherever you need to retreive data.
+
+You also get some simple `login` and `logout` directives that plug right into Firebase's oauth system.
 
 ## shared code
 
 Shared code uses a bit of hackery to choose the right DI library.  This is the snippet that I add to the top of all my `.shared` files:
 
-```
+```coffee
 # shared by browser and node
 di = (typeof window!='undefined') && window.angular || require('pongular').pongular
-di.module 'appApp'
+di.module 'myApp'
 ```
 
 On the client, that will use angular's DI, and on the server, it will use pongular's.  The syntax for both is identical.  Magic!
 
-## Details
+## Describing and Referencing your Firebase Data
 
-### shared: $model
+### The `$model` Service (shared)
 
 Define `$model`s in your `.shared` code to get:
 
@@ -38,58 +65,62 @@ Define `$model`s in your `.shared` code to get:
 * consistent references to FB paths on both client and server
 * extra syntactic sugar on the client and server for directly modifying FB resources.
 
-```
+```coffee
 # defined somewhere else...
 # .service 'fbRoot', -> new Firebase("MY_FIREBASE_URL")
 
-.service 'Profile', ($model, fbRoot)->
+.service 'Profile', ['$model', 'fbRoot', ($model, fbRoot)->
   $model fbRoot.child('profile')
+]
 
-.service 'Site', ($model, fbRoot)
+.service 'Site', ['$model', 'fbRoot', ($model, fbRoot)->
   $model fbRoot.child('site')
+]
 
-.service 'Objective', ($model, fbRoot)
+.service 'Objective', ['$model', 'fbRoot', ($model, fbRoot)->
   $model fbRoot.child('objective')
+]
 
-.service 'ObjectiveAssigned', ($model, fbRoot)
+.service 'ObjectiveAssigned', ['$model', 'fbRoot', ($model, fbRoot)->
   $model fbRoot.child('objectiveAssigned')
+]
 
-.service 'Project', ($model, fbRoot)->
-  $model fbRoot.child('project')
+.service 'Event', ['$model', 'fbRoot', ($model, fbRoot)->
+  $model fbRoot.child('event')
+]
 
-.service 'ProjectMember', ($model, fbRoot)->
-  $model fbRoot.child('projectMember')
+.service 'EventOwner', ['$model', 'fbRoot', ($model, fbRoot)->
+  $model fbRoot.child('eventOwner')
+]
 ```
 
 You can directly use these services anywhere in your client or server by simply injecting them:
 
-```
-# in angular-land
-# everything returns a firebase
-.directive 'newProjectForm', ['Project', (Project)->
+```coffee
+# its basically a firebase
+.directive 'newEventForm', ['Event', (Event)->
   template: ...
   link: (scope,el,attrs)->
-    scope.create = (data)-> Project.add(data)
+    scope.create = (data)-> Event.push(data)
 ]
 
-# in pongular-land
-# everything returns a promise wrapping the firebase js library
-.service 'setName', ['Site', (Site)->
+# the model has an extra `promise` attribute tacked on
+# that lets you easily do things and avoid callback hell
+.service 'doStuff', ['Site', (Site)->
   (name)->
-    # gets a child with the key of 'SINGLE'
-    Site.single()
-
-    .update( {name: name} )
-
+    Site.single().promise.set({name: name}) # NOT IMPLEMENTED YET
+    .then (siteRef)-> siteRef.promise.get()
+    .then (snap)-> console.log snap.val().name
 ]
 ```
-### client: model directive
 
-The `model` directive lets you easily use services defined with `$model` in your angular app.
+### Data Directives (angular)
 
-No need to attach a variable to a controller "by hand" or anything like that.  You just specify a `model` attribute:
+The `collection` and `model` directives lets you easily use services defined with `$model` in your angular app.
 
-```
+No need to attach a variable to a controller "by hand" or anything like that.  You just specify the attribute:
+
+```html
 <div model='Site'>
   {{Site.name}}
 </div>
@@ -97,35 +128,85 @@ No need to attach a variable to a controller "by hand" or anything like that.  Y
 
 Specifying nothing but `model` will tell the directive to treat it like a singleton.  It will create an isolate scope with a Site property.  That property is bound to the .single() method of the Site service, which resolves to a child with the key of 'SINGLE'
 
-Once you start specifying anything else but the model, the directive will get clever about what it thinks you want
+Once you start specifying anything else but the model, the directives will get clever about what they think you want
 and build the firebase query accordingly.
 
-#### queries generated by model attributes
+#### `collection` directive
 
-There are three possible attributes you can use along with the `model` attribute:
+This uses `by` and `with` attributes to get an array of up to `limit` records.  Use `ng-repeat` to iterate over them in angular.
 
-* `by` will filter your records based on one of their properties, using firebase's `orderByChild()`.
-* `with` can be used with or without `by`.  In conjunction with `by`, it will use firebase's `equalTo()` to limit the `orderByChild()`.  Without `by`, it simply gets the record with the matching key.  If `with` is set to an array of items, it is assumed to be a composite key and is `join()`d with `|`.
-* `limit` will simply apply a `limitToFirst()` filter on the firebase query.  If no `limit` is specified, it defaults to one.
-* if none of these attributes are specified, the query will get the child at 'SINGLE' as a singleton.
+* `by` will filter your records based on one of their properties, using firebase's `orderByChild()`.  This attribute is *not* $eval'd.
+* You can also use `with` in conjunction with `by` in order to get records with a specific child.  If `with` is an array of items, it is assumed to be a composite key and is `join()`d with `|`.  This attribute *is* $eval'd.
+* `limit` will simply apply a `limitToFirst()` filter on the firebase query.  If no `limit` is specified, it defaults to one.  This attribute *is* $eval'd.  
 
-#### model attribute examples
+#### `model` directive
 
-Specify a limit and the directive will behave like `ng-repeat` and copy the contents for each record in the collection.  It will apply orderByPriority() to the query automatically.
+This uses the same `by` and `with` attributes, but they behave slightly differently.  It also directly attaches a property to the scope named after the model, instead of requiring an `ng-repeat` to iterate.
 
+* `with` is required, and if used by itself, simply gets the child with the matching key.  This attribute *is* $eval'd.
+* `by` is optional, and changes what `with` means.  If used, it will use the value to find a single record with a child that matches `with`.
+* `limit` doesn't do 
+
+#### Aliasing with `as`
+
+For both `collection` and `model` directives, you can use an `as` attribute to change the name of the scope property used.
+
+### Auth Directives & Services (angular)
+
+#### `$authManager` service
+
+Use this service to automatically update a scope property whenever auth state changes.  It takes up to three arguments:
+
+* pass a `scope` to tell it to update the property on that particular scope.  If none passed, defaults to $rootScope.
+* then pass `property` to tell it what to bind to.  Defaults to "auth".
+* finally, if you want something else to happen in your app when auth state changes, pass a `callback`.  This will be called with the auth result as the only argument.
+
+```coffee
+# somewhere like module.run or in a top-level 'authed' state in ui-router, see test/site/app/app.coffee for example
+
+$authManager() # just bind to $rootScope.auth
+$authManager $scope # bind to a specific scope
+$authManager $scope, 'userAuth' # bind to $scope.userAuth
+$authManager $scope, 'userAuth', (result)-> console.log 'auth changed', result
 ```
-<div model='Profile' limit='10'>
+
+#### `login` and `logout` directives
+
+Simply attach them to anything that works with `ng-click` and these directives will hook the element to the proper behavior:
+
+```html
+<div ng-hide='auth.uid'>
+  <button login='google'>Login with Google</button>
+  <button login='facebook'>Login with Google</button>
+</div>
+<div ng-show='auth.uid'>
+  <button logout>Logout</button>
+</div>
+```
+
+When those buttons are clicked, and authentication state changes, the `$authManager` will automatically update whatever you told it to update.
+
+#### Examples
+
+Use ng-repeat to iterate over the first ten profiles.  It will apply orderByPriority() to the query automatically.
+
+```html
+<div collection='Profile' limit='10'>
+  <div ng-repeat='Profile in Profiles'>
   <h1>{{Profile.name}}</h1>
+  </div>
 </div>
 ```
 
 This would create an `<h1>` element for each Profile, showing the name field.
 
-You can take use the `by` and `equal-to` attributes to take advantage of firebase's orderByChild query filter in order to select a subset of children from Firebase:
+You can take use the `by` and `with` attributes to take advantage of firebase's orderByChild query filter in order to select a subset of children from Firebase:
 
-```
-<div model='Profile' by='is_public' with='true' limit='10'>
+```html
+<div collection='Profile' by='is_public' with='true' limit='10'>
+  <div ng-repeat='Profile in Profiles'>
   <h1>{{Profile.name}}</h1>
+  </div>
 </div>
 ```
 
@@ -133,41 +214,44 @@ You can nest `model` directives in lots of interesting ways.
 
 Nest your `model`s to show data from multiple objects.  Here, we're showing stuff from the Site singleton as well as the Profile found with a `uid` matching `auth.uid`.  
 
-```
+```html
 <div model='Site'>
-  <div model='Profile' by='uid' with='{{auth.uid}}' limit='1'>
-    <h1>{{profile.name}}</h1>
-    <h2>Karma: {{profile.karma_earned}}</h2>
-    <span>Total karma for all users on site: {{site.karma_earned_total}}</span>
+  <div collection='Profile' by='uid' with='{{auth.uid}}' limit='1'>
+    <div ng-repeat='Profile in Profiles'>
+      <h1>{{profile.name}}</h1>
+      <h2>Karma: {{profile.karma_earned}}</h2>
+      <span>Total karma for all users on site: {{site.karma_earned_total}}</span>
+    </div>
   </div>
 </div>
 ```
 
 Here's how to nest `model`s to reflect a many-to-many relationship.
-This shows the projects that the user is a member of.
+This shows the Events that the user is a member of.
 
-```
+```html
 <div model='Profile' by='uid' with='{{auth.uid}}' limit='1'>
   <h1>{{Profile.name}}</h1>
 
-  <h3>My Projects</h3>
+  <h3>My Events</h3>
 
-  <div model='ProjectMember' by='profile_key' with='Profile.$key'>
-    <div model='Project' with='ProjectMember.project_key'>
-      <h4>{{Project.name}}</h4>
-      <span>Member since {{ProjectMember.created_on}}</span>
+  <div model='EventOwner' by='profile_key' with='Profile.$key'>
+    <div model='Event' with='EventMember.Event_key'>
+      <h4>{{Event.name}}</h4>
+      <span>Member since {{EventMember.created_on}}</span>
   </div>
 </div>
 ```
 
 In this case:
 
-* We repeat the innards of the ProjectMember div for each ProjectMember that has a profile_key equal to the current Profile.$key.
-* For each ProjectMember, we find the Project `model` with a matching project_key.
+* We repeat the innards of the EventOwner div for each EventOwner that has a profile_key equal to the current Profile.$key.
+* For each EventOwner, we find the Event `model` with a matching Event_key.
 
 
-Show a logged in user's profile (found with auth.uid scope variable) and outstanding objectives and projects they're members of.
-```
+Show a logged in user's profile (found with auth.uid scope variable) and outstanding objectives and Events they're members of.
+
+```html
 <div model='Site'>
   <div model='Profile' by='uid' with='{{auth.uid}}' limit='1'>
     <h1>{{profile.name}}</h1>
@@ -180,22 +264,22 @@ Show a logged in user's profile (found with auth.uid scope variable) and outstan
       {{objectiveAssignment.name}}: {{objectiveAssignment.karma_reward}} karma
     </div>
 
-    <h3>My Projects</h3>
+    <h3>My Events</h3>
 
-    <div model='ProjectMember' by='profile_key' with='profile.$key'>
-      <div model='Project' key='projectMember.project_key'>
-        <h4>{{project.name}}</h4>
-        <span>Member since {{projectMember.created_on}}</span>
+    <div model='EventMember' by='profile_key' with='profile.$key'>
+      <div model='Event' key='EventMember.Event_key'>
+        <h4>{{Event.name}}</h4>
+        <span>Member since {{EventMember.created_on}}</span>
     </div>
   </div>
 </div>
 ```
 
-### server: $modelManager
+### The `$modelManager` Service (node)
 
 Define `$modelManager`s in your server code and call `listen()` when you start your server:
 
-```
+```coffee
 # this is called somewhere in server startup.
 .service 'CalledByMyServer', (ProfileManager, ObjectiveAssignedManager)->
   ->
@@ -232,13 +316,13 @@ Define `$modelManager`s in your server code and call `listen()` when you start y
         total: 'karma_earned'
         target: Site.single()
 
-.service 'ProjectMemberManager', ($modelManager, ProjectMember, Project)->
-  $modelManager ProjectMember,
+.service 'EventMemberManager', ($modelManager, EventMember, Event)->
+  $modelManager EventMember,
     counters:
 
       # provide a function as your counter target and whatever it returns will be used as the target
-      project_member_count:
-        target: (rec)-> Project.byKey(rec.profile_key)
+      Event_member_count:
+        target: (rec)-> Event.byKey(rec.profile_key)
 
 .service 'ObjectiveAssignedManager', ($modelManager, ObjectiveAssigned, Profile, Objective)->
   $modelManager ObjectiveAssigned,

@@ -27,6 +27,15 @@ di.module 'pong-base'
           else
             ref
           $promise (d)-> query.once 'value', d.resolve
+
+      ref.buildQuery = (byChild, withValue, limitTo)->
+        if typeof withValue == 'object' then withValue = withValue.join('|')
+
+        query = byChild && ref.orderByChild(byChild) || ref.orderByKey()
+        if withValue then query = query.equalTo withValue
+        unless withValue || byChild || limitTo then query = query.equalTo 'SINGLE'
+        query = query.limitToFirst(limitTo||1)
+
       ref
 
     decorate fbRef

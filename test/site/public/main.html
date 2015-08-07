@@ -1,12 +1,36 @@
-<button login='google' ng-hide='auth.uid'>Login</button>
-<div ng-show='auth.uid'>
-Welcome, {{user.displayName}} [{{auth.uid}}] <button logout ng-show='auth.uid'>Logout</button>
-</div>
-<h2>Your Profile</h2>
-<div model='Profile' with='auth.uid'>
-	Profile: {{Profile}}
-</div>
-<h2>Other Profiles</h2>
-<div model='Profile' limit='10'>
-	Another Profile: {{Profile}}
+<div model='Profile' as='UserProfile' by='uid' with='{{auth.uid}}'>
+	<div class='navbar container'>
+		<div>My App</div>
+		<div ng-hide='auth.uid'>
+			<button login='google' method='popup'>Login w Popup</button>
+			<button login='google'>Login w Redirect</button>
+		</div>
+		<div ng-show='auth.uid && UserProfile_loaded'>
+			NAME: {{UserProfile.nameFirst}} {{UserProfile.nameLast}}
+			UID: {{auth.uid}}
+			<button logout ng-show='auth.uid'>Logout</button>
+		</div>
+		<hr/>
+	</div>
+	<div class='user container' ng-show='UserProfile_loaded'>
+		<h2>Your Profile (model directive)</h2>
+		<img ng-src='{{UserProfile.profilePicUrl}}' width=64 height=64 style='border-radius: 32px'/>
+		<h3>{{UserProfile.nameFirst}} {{UserProfile.nameLast}}</h3>
+	</div>
+
+	<div collection='Event' limit='10' ng-show='Events_loaded'>
+		<h2>Event (Collection)</h2>
+		Showing {{Events.length}} events.
+		<div ng-repeat='Event in Events' style='margin-top: 0.em; border-top: 1px solid #999'>
+			<h3>{{Event.name}}</h3>
+			<img ng-src='{{Event.cardPic}}' width=64 height=64/>
+			<div collection='EventOwner' by='event_key' with='Event.$id'>
+				<h5>Event Owners</h5>
+				<div ng-repeat='EventOwner in EventOwners' model='Profile' with='{{EventOwner.profile_key}}'>
+					<img ng-src='{{Profile.profilePicUrl}}' width=32 height=32 style='border-radius: 16px;'/>
+					{{Profile.nameFirst}} {{Profile.nameLast}}
+				</div>
+			</div>
+		</div>
+	</div>
 </div>

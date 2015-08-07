@@ -8,6 +8,7 @@ bowerFiles = require 'main-bower-files'
 inject = require 'gulp-inject'
 coffee = require 'gulp-coffee'
 concat = require 'gulp-concat'
+stylus = require 'gulp-stylus'
 karma = require('karma').Server
 
 compile_coffeescript = (src_paths,dest_name,dest='./')->
@@ -21,6 +22,7 @@ BROWSER_SPECS = ['./browser/*.spec.coffee', './shared/*.spec.coffee']
 NODE_FILES = ['./node/*.src.coffee', './shared/*.src.coffee']
 NODE_SPECS = ['./node/*.spec.coffee', './shared/*.spec.coffee']
 APP_FILES = ['./test/site/app/*.coffee']
+STYLUS_FILES = ['./test/site/**/*.styl']
 
 gulp.task 'default', ['tdd']
 
@@ -51,7 +53,7 @@ gulp.task 'node:compile', ->
 # runs a dev server w livereload on 9000
 gulp.task 'serve', ['server:seed'], ->
 	server.listen {path: './test/site/listen.coffee'}, livereload.listen
-	gulp.watch [BROWSER_FILES..., BROWSER_SPECS..., NODE_FILES..., NODE_SPECS..., APP_FILES...], ['server:build']
+	gulp.watch [BROWSER_FILES..., BROWSER_SPECS..., NODE_FILES..., NODE_SPECS..., APP_FILES..., STYLUS_FILES...], ['server:build']
 	gulp.watch ['./test/site/public/*']
 	.on 'change', (file)->
 		server.changed (err)->
@@ -76,6 +78,11 @@ gulp.task 'server:build', ['browser:test', 'node:test', 'server:compile', 'serve
 
 gulp.task 'server:compile', ->
 	compile_coffeescript APP_FILES, 'app.js', './test/site/app'
+
+	gulp.src STYLUS_FILES
+	.pipe stylus()
+	.pipe concat('styles.css')
+	.pipe gulp.dest './test/site/public'
 
 gulp.task 'server:inject', ->
 	testSiteFiles = bowerFiles( {paths: './test/site'} )

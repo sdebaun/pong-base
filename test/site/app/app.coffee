@@ -8,8 +8,6 @@ angular.module 'app', [
 
 .service 'fbRoot', (Firebase)-> new Firebase("http://sparks-development.firebaseio.com")
 
-.service 'fbAuth', ['$firebaseAuth', 'fbRoot', ($firebaseAuth, fbRoot)->$firebaseAuth(fbRoot)]
-
 .config ($stateProvider, $urlRouterProvider, $locationProvider) ->
   $urlRouterProvider
   .otherwise '/'
@@ -24,13 +22,25 @@ angular.module 'app', [
     template: '<div ui-view></div>'
     resolve:  
       authed: ['fbAuth', (fbAuth)-> fbAuth.$waitForAuth() ]
-    controller: ['$scope', '$state', 'fbAuth', 'authed', 'Profile', ($scope, $state, fbAuth, authed, Profile)->
-      fbAuth.$onAuth (result)->
-        $scope.auth = result
+    controller: ['$scope', '$authManager', 'Profile', 'ProfileBuilder', ($scope, $authManager, Profile, ProfileBuilder)->
+      $authManager $scope,'auth', (result)->
         if result?.uid then Profile.promise.get('uid',result.uid).then (snap)->
-          unless snap.val() then Profile.push {uid: result.uid, displayName: result.google.displayName}
+          unless snap.val() then Profile.push ProfileBuilder[result.provider](result)
     ]
 
   .state 'authed.main',
     url: '/'
     templateUrl: 'main.html'
+
+.service 'ProfileBuilder', ->
+
+  google: (auth)->
+    console.log 'Building profile from google auth'
+    nameFirst: auth.google.cachedUserProfile.given_name
+    nameLast: auth.google.cachedUserProfile.family_name
+    email: auth.google.email
+    uid: auth.uid
+    profilePicUrl: auth.google.profileImageURL
+
+  facebook: (auth)->
+    auth

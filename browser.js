@@ -1,22 +1,54 @@
-angular.module('pong-base', ['firebase']).directive('login', [
+var slice = [].slice;
+
+angular.module('pong-base', ['firebase']).service('fbAuth', [
+  '$firebaseAuth', 'fbRoot', function($firebaseAuth, fbRoot) {
+    return $firebaseAuth(fbRoot);
+  }
+]).service('$authManager', [
+  'fbAuth', '$rootScope', function(fbAuth, $rootScope) {
+    return function(scope, property, callback) {
+      if (scope == null) {
+        scope = $rootScope;
+      }
+      if (property == null) {
+        property = 'auth';
+      }
+      if (callback == null) {
+        callback = null;
+      }
+      fbAuth.$waitForAuth().then(function(authed) {
+        return scope[property] = authed;
+      });
+      return fbAuth.$onAuth(function(result) {
+        console.log('auth changing to', result);
+        scope[property] = result;
+        if (callback) {
+          return callback(result);
+        }
+      });
+    };
+  }
+]).directive('login', [
   '$compile', 'fbAuth', function($compile, fbAuth) {
     return {
       restrict: 'A',
       priority: 1001,
       terminal: true,
-      compile: function(el, attrs) {
+      compile: function(_el, _attrs) {
         var linker, provider;
-        provider = attrs.login;
+        provider = _attrs.login;
         if (provider !== 'google' && provider !== 'facebook') {
           throw "Must specify login=provider of google or facebook.  Got " + provider + " instead.";
         }
-        el.attr('ng-click', "login('" + provider + "')");
-        el.attr('aria-label', "login with " + provider);
-        el.addClass("login " + provider);
-        linker = $compile(el, null, 1001);
-        return function(scope) {
-          scope.login = function(prov) {
-            return fbAuth.$authWithOAuthRedirect(prov, {
+        _el.attr('ng-click', "login('" + provider + "','" + (_el.attr('method')) + "')");
+        _el.attr('aria-label', "login with " + provider);
+        _el.addClass("login " + provider);
+        linker = $compile(_el, null, 1001);
+        return function(scope, el) {
+          scope.login = function(prov, method) {
+            var authFn;
+            authFn = (method === 'popup') && fbAuth.$authWithOAuthPopup || fbAuth.$authWithOAuthRedirect;
+            return authFn(prov, {
               scope: 'email'
             });
           };
@@ -46,53 +78,75 @@ angular.module('pong-base', ['firebase']).directive('login', [
       }
     };
   }
-]).directive('model', [
+]).directive('collection', [
   '$compile', '$injector', '$parse', '$firebaseArray', function($compile, $injector, $parse, $firebaseArray) {
     return {
       restrict: 'A',
-      priority: 2001,
-      terminal: true,
       scope: true,
-      compile: function(_el, _attrs) {
-        var linker, model, modelName;
-        modelName = _attrs.model;
-        model = $injector.get(modelName);
-        _el.attr('ng-repeat', modelName + " in " + modelName + "s");
-        linker = $compile(_el, null, 1001);
-        return function(scope, el, attrs) {
-          var build_query, watch_attr_val;
-          build_query = function(byChild, withValue, limitTo) {
-            var query;
-            if (typeof withValue === 'object') {
-              withValue = withValue.join('|');
+      link: function(scope, el, attrs) {
+        var model, modelName, watch_attr_val;
+        modelName = attrs.as || (attrs.collection + 's');
+        model = $injector.get(attrs.collection);
+        watch_attr_val = function(attr_val) {
+          return scope.$watch(attr_val, function() {
+            var evalWith;
+            evalWith = scope.$eval(attrs["with"]);
+            if (evalWith && !attrs.by) {
+              scope[modelName] = null;
+              return scope[modelName + "_loaded"] = false;
+            } else {
+              scope[modelName] = $firebaseArray(model.buildQuery(attrs.by, scope.$eval(attrs["with"]), scope.$eval(attrs.limit)));
+              return scope[modelName + "_loaded"] = scope[modelName].$loaded();
             }
-            console.log(modelName, byChild, withValue, limitTo);
-            query = byChild && model.orderByChild(byChild) || model.orderByKey();
-            if (withValue) {
-              query = query.equalTo(withValue);
-            }
-            if (!(withValue || byChild || limitTo)) {
-              query = query.equalTo('SINGLE');
-            }
-            query = query.limitToFirst(limitTo || 1);
-            return scope[modelName + 's'] = $firebaseArray(query);
-          };
-          watch_attr_val = function(attr_val) {
-            return scope.$watch(attr_val, function() {
-              return build_query(scope.$eval(attrs.by), scope.$eval(attrs["with"]), scope.$eval(attrs.limit));
-            });
-          };
-          attrs.$observe('by', function() {
-            return watch_attr_val(attrs.by);
           });
-          attrs.$observe('with', function() {
-            return watch_attr_val(attrs["with"]);
-          });
-          attrs.$observe('limit', function() {
-            return watch_attr_val(attrs.limit);
-          });
-          return linker(scope);
         };
+        attrs.$observe('by', function() {
+          return watch_attr_val(attrs.by);
+        });
+        attrs.$observe('with', function() {
+          return watch_attr_val(attrs["with"]);
+        });
+        return attrs.$observe('limit', function() {
+          return watch_attr_val(attrs.limit);
+        });
+      }
+    };
+  }
+]).directive('model', [
+  '$compile', '$injector', '$parse', '$firebaseObject', '$firebaseArray', function($compile, $injector, $parse, $firebaseObject, $firebaseArray) {
+    return {
+      restrict: 'A',
+      scope: true,
+      link: function(scope, el, attrs) {
+        var model, modelName, oldBy, oldLimit, oldWith, update_scope;
+        modelName = attrs.as || attrs.model;
+        model = $injector.get(attrs.model);
+        oldBy = oldWith = oldLimit = null;
+        update_scope = function() {
+          var args, ref;
+          args = 1 <= arguments.length ? slice.call(arguments, 0) : [];
+          if ((attrs.by === oldBy) && (attrs["with"] === oldWith) && (attrs.limit === oldLimit)) {
+            return;
+          }
+          if (attrs.by && !attrs["with"]) {
+            scope[modelName] = null;
+          } else {
+            scope[modelName + 's'] = $firebaseArray(model.buildQuery(attrs.by, attrs["with"], 1));
+            scope[modelName + 's'].$watch(function(result) {
+              if (result.event === 'child_removed') {
+                scope[modelName] = null;
+                return scope[modelName + "_loaded"] = false;
+              } else if (result.event === 'child_added') {
+                scope[modelName] = $firebaseObject(model.child(result.key));
+                return scope[modelName + "_loaded"] = scope[modelName].$loaded();
+              }
+            });
+          }
+          return ref = [attrs.by, attrs["with"], attrs.limit], oldBy = ref[0], oldWith = ref[1], oldLimit = ref[2], ref;
+        };
+        attrs.$observe('by', update_scope);
+        attrs.$observe('with', update_scope);
+        return attrs.$observe('limit', update_scope);
       }
     };
   }
@@ -139,6 +193,20 @@ di.module('pong-base').service('$encodeKey', function() {
               return query.once('value', d.resolve);
             });
           }
+        };
+        ref.buildQuery = function(byChild, withValue, limitTo) {
+          var query;
+          if (typeof withValue === 'object') {
+            withValue = withValue.join('|');
+          }
+          query = byChild && ref.orderByChild(byChild) || ref.orderByKey();
+          if (withValue) {
+            query = query.equalTo(withValue);
+          }
+          if (!(withValue || byChild || limitTo)) {
+            query = query.equalTo('SINGLE');
+          }
+          return query = query.limitToFirst(limitTo || 1);
         };
         return ref;
       };

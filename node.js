@@ -10,6 +10,10 @@ pongular.module('pong-base', []).service('Firebase', function() {
   return function(model) {
     return console.log('starting watchers for', model.name());
   };
+}).service('$modelManager', function() {
+  return function(model) {
+    return model;
+  };
 });
 
 var di;
@@ -53,6 +57,20 @@ di.module('pong-base').service('$encodeKey', function() {
               return query.once('value', d.resolve);
             });
           }
+        };
+        ref.buildQuery = function(byChild, withValue, limitTo) {
+          var query;
+          if (typeof withValue === 'object') {
+            withValue = withValue.join('|');
+          }
+          query = byChild && ref.orderByChild(byChild) || ref.orderByKey();
+          if (withValue) {
+            query = query.equalTo(withValue);
+          }
+          if (!(withValue || byChild || limitTo)) {
+            query = query.equalTo('SINGLE');
+          }
+          return query = query.limitToFirst(limitTo || 1);
         };
         return ref;
       };
