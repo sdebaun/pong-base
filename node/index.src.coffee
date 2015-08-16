@@ -31,7 +31,7 @@ pongular.module 'pong-base' , []
 		console.log 'COMPOSITE: adding index builder to', model.key(), 'named', composite_name, 'with fields', fields...
 		update_handler = (snap)->
 			rec = snap.val()
-			new_composite_value = (rec[f] for f in fields).join('|')
+			new_composite_value = (rec[f] || 'false' for f in fields).join('|')
 			if rec[composite_name] != new_composite_value then snap.ref().child(composite_name).set new_composite_value
 		model.on 'child_added', update_handler
 		model.on 'child_changed', update_handler

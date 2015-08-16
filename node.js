@@ -52,7 +52,7 @@ pongular.module('pong-base', []).service('Firebase', function() {
         results = [];
         for (i = 0, len = fields.length; i < len; i++) {
           f = fields[i];
-          results.push(rec[f]);
+          results.push(rec[f] || 'false');
         }
         return results;
       })()).join('|');
