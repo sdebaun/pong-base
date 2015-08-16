@@ -62,16 +62,16 @@ pongular.module 'pong-base' , []
 		else
 			model
 
-		query.on 'child_added', (snap)-> update_handler(snap,'added')
-		query.on 'child_changed', (snap)-> update_handler(snap,'changed')
-		query.on 'child_removed', remove_handler
+		query.on 'child_added', (snap)-> setTimeout  (-> update_handler(snap,'added')), 0
+		query.on 'child_changed', (snap)-> setTimeout (-> update_handler(snap,'changed')), 0
+		query.on 'child_removed', (snap)-> setTimeout (-> remove_handler), 0
 
 .service 'updateAllTargetCounters', (updateTargetCounter, getTargetRefs)->
 	(counter_name, target, rec, count_value_old, count_value_new)->
 		delta = count_value_new - count_value_old
 		unless delta == 0
 			for target_ref in getTargetRefs(target,rec)
-				updateTargetCounter(target_ref, counter_name, delta)
+				setTimeout (->updateTargetCounter(target_ref, counter_name, delta)), 0
 		count_value_new
 
 .service 'updateTargetCounter', ->

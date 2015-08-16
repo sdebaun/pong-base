@@ -84,12 +84,20 @@ pongular.module('pong-base', []).service('Firebase', function() {
     };
     query = counter_options.countIf ? ((ref = counter_options.countIf, field = ref[0], value = ref[1], ref), model.orderByChild(field).equalTo(value)) : model;
     query.on('child_added', function(snap) {
-      return update_handler(snap, 'added');
+      return setTimeout((function() {
+        return update_handler(snap, 'added');
+      }), 0);
     });
     query.on('child_changed', function(snap) {
-      return update_handler(snap, 'changed');
+      return setTimeout((function() {
+        return update_handler(snap, 'changed');
+      }), 0);
     });
-    return query.on('child_removed', remove_handler);
+    return query.on('child_removed', function(snap) {
+      return setTimeout((function() {
+        return remove_handler;
+      }), 0);
+    });
   };
 }).service('updateAllTargetCounters', function(updateTargetCounter, getTargetRefs) {
   return function(counter_name, target, rec, count_value_old, count_value_new) {
@@ -99,7 +107,9 @@ pongular.module('pong-base', []).service('Firebase', function() {
       ref = getTargetRefs(target, rec);
       for (i = 0, len = ref.length; i < len; i++) {
         target_ref = ref[i];
-        updateTargetCounter(target_ref, counter_name, delta);
+        setTimeout((function() {
+          return updateTargetCounter(target_ref, counter_name, delta);
+        }), 0);
       }
     }
     return count_value_new;
