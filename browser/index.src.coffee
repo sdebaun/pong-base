@@ -60,6 +60,7 @@ angular.module 'pong-base', ['firebase']
         scope[modelName+"_loaded"] = false
       else
         withValue = attrs.alsoWith && [attrs.with,attrs.alsoWith].join('|') || attrs.with
+        if attrs.alsoAlsoWith then withValue = [withValue,attrs.alsoAlsoWith].join('|') # TRWTF...
         scope[modelName] = $firebaseArray model.buildQuery( attrs.by, withValue, scope.$eval(attrs.limit) )
         scope[modelName+"_loaded"] = scope[modelName].$loaded()
 

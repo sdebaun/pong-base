@@ -26,6 +26,9 @@ pongular.module 'app', ['pong-base']
 		initialize: (rec)->
 			console.log "Initialized for new record"
 
+		triggers:
+			isConfirmed: (snap)-> console.log "confirmed!", snap.val()
+
 		counters:
 
 			profile_count:

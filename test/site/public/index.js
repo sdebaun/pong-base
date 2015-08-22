@@ -100,6 +100,9 @@ angular.module('pong-base', ['firebase']).service('fbAuth', [
             return scope[modelName + "_loaded"] = false;
           } else {
             withValue = attrs.alsoWith && [attrs["with"], attrs.alsoWith].join('|') || attrs["with"];
+            if (attrs.alsoAlsoWith) {
+              withValue = [withValue, attrs.alsoAlsoWith].join('|');
+            }
             scope[modelName] = $firebaseArray(model.buildQuery(attrs.by, withValue, scope.$eval(attrs.limit)));
             return scope[modelName + "_loaded"] = scope[modelName].$loaded();
           }

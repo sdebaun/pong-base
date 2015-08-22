@@ -20,6 +20,13 @@ pongular.module 'pong-base' , []
 					console.log 'initializing', snap.ref().key()
 					options.initialize snap
 					snap.ref().child('is_initialized').set( new Date().getTime() )
+			for trigger_field, trigger_function of options.triggers
+				model.orderByChild(trigger_field).equalTo(true).on 'child_added', (snap)->
+					rec = snap.val()
+					unless rec[trigger_field+'_triggered']
+						snap.ref().child(trigger_field+'_triggered').transaction (old_val)->
+							trigger_function snap
+							true # sets _triggered
 			for counter_name, counter_options of options.counters
 				startCounterHandler(model, counter_name, counter_options)
 			for composite_name, composite_fields of options.composites

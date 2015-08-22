@@ -10,7 +10,7 @@ pongular.module('pong-base', []).service('Firebase', function() {
 }).service('$modelManager', function(startCounterHandler, startCompositeHandler) {
   return function(model, options) {
     model.listen = function() {
-      var composite_fields, composite_name, counter_name, counter_options, ref, ref1, results;
+      var composite_fields, composite_name, counter_name, counter_options, ref, ref1, ref2, results, trigger_field, trigger_function;
       console.log('listening to', model.key());
       if (options.timestamp) {
         model.orderByChild('created_on').equalTo(null).on('child_added', function(snap) {
@@ -25,15 +25,29 @@ pongular.module('pong-base', []).service('Firebase', function() {
           return snap.ref().child('is_initialized').set(new Date().getTime());
         });
       }
-      ref = options.counters;
-      for (counter_name in ref) {
-        counter_options = ref[counter_name];
+      ref = options.triggers;
+      for (trigger_field in ref) {
+        trigger_function = ref[trigger_field];
+        model.orderByChild(trigger_field).equalTo(true).on('child_added', function(snap) {
+          var rec;
+          rec = snap.val();
+          if (!rec[trigger_field + '_triggered']) {
+            return snap.ref().child(trigger_field + '_triggered').transaction(function(old_val) {
+              trigger_function(snap);
+              return true;
+            });
+          }
+        });
+      }
+      ref1 = options.counters;
+      for (counter_name in ref1) {
+        counter_options = ref1[counter_name];
         startCounterHandler(model, counter_name, counter_options);
       }
-      ref1 = options.composites;
+      ref2 = options.composites;
       results = [];
-      for (composite_name in ref1) {
-        composite_fields = ref1[composite_name];
+      for (composite_name in ref2) {
+        composite_fields = ref2[composite_name];
         results.push(startCompositeHandler(model, composite_name, composite_fields));
       }
       return results;
