@@ -1,5 +1,7 @@
 # shared by browser and node
 di = if (typeof window!='undefined') then window.angular else require('pongular').pongular
+extend = if (typeof window!='undefined') then window.angular.extend else require('extend')
+
 di.module 'pong-base'
 
 .service '$encodeKey', ->
@@ -13,7 +15,7 @@ di.module 'pong-base'
 ]
 
 .service '$model', ['$encodeKey', '$promise', ($encodeKey, $promise)->
-  (fbRef, options={})->
+  (fbRef, options={}, methods={})->
     decorate = (ref)->
       ref.promise = 
         push: (obj)->
@@ -27,6 +29,13 @@ di.module 'pong-base'
           else
             ref
           $promise (d)-> query.once 'value', d.resolve
+        getFirst: (idx_or_key,key_for_idx)->
+          ref.promise.get(idx_or_key,key_for_idx).then (snap)->
+            rec = snap.val()
+            key = Object.keys(rec)[0]
+            val = rec[key]
+            val.$id = key
+            val
 
       ref.buildQuery = (byChild, withValue, limitTo)->
         if typeof withValue == 'object' then withValue = withValue.join('|')
@@ -37,6 +46,7 @@ di.module 'pong-base'
         query = query.limitToFirst(limitTo||1)
 
       ref.single = -> fbRef.child('SINGLE')
+      extend ref, methods
       ref
 
     decorate fbRef

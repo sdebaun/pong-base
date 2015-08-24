@@ -153,9 +153,11 @@ angular.module('pong-base', ['firebase']).service('fbAuth', [
   }
 ]);
 
-var di;
+var di, extend;
 
 di = typeof window !== 'undefined' ? window.angular : require('pongular').pongular;
+
+extend = typeof window !== 'undefined' ? window.angular.extend : require('extend');
 
 di.module('pong-base').service('$encodeKey', function() {
   return function(key) {
@@ -172,10 +174,13 @@ di.module('pong-base').service('$encodeKey', function() {
   }
 ]).service('$model', [
   '$encodeKey', '$promise', function($encodeKey, $promise) {
-    return function(fbRef, options) {
+    return function(fbRef, options, methods) {
       var decorate;
       if (options == null) {
         options = {};
+      }
+      if (methods == null) {
+        methods = {};
       }
       decorate = function(ref) {
         ref.promise = {
@@ -192,6 +197,16 @@ di.module('pong-base').service('$encodeKey', function() {
             query = idx_or_key && key_for_idx ? ref.orderByChild(idx_or_key).equalTo(key_for_idx) : idx_or_key && !key_for_idx ? ref.orderByKey().equalTo(idx_or_key) : ref;
             return $promise(function(d) {
               return query.once('value', d.resolve);
+            });
+          },
+          getFirst: function(idx_or_key, key_for_idx) {
+            return ref.promise.get(idx_or_key, key_for_idx).then(function(snap) {
+              var key, rec, val;
+              rec = snap.val();
+              key = Object.keys(rec)[0];
+              val = rec[key];
+              val.$id = key;
+              return val;
             });
           }
         };
@@ -212,6 +227,7 @@ di.module('pong-base').service('$encodeKey', function() {
         ref.single = function() {
           return fbRef.child('SINGLE');
         };
+        extend(ref, methods);
         return ref;
       };
       return decorate(fbRef);
