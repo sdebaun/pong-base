@@ -164,13 +164,10 @@ di.module('pong-base').service('$encodeKey', function() {
   }
 ]).service('$model', [
   '$encodeKey', '$promise', function($encodeKey, $promise) {
-    return function(fbRef, options, methods) {
+    return function(fbRef, options) {
       var decorate;
       if (options == null) {
         options = {};
-      }
-      if (methods == null) {
-        methods = {};
       }
       decorate = function(ref) {
         ref.promise = {
@@ -217,7 +214,7 @@ di.module('pong-base').service('$encodeKey', function() {
         ref.single = function() {
           return fbRef.child('SINGLE');
         };
-        extend(ref, methods);
+        extend(ref, options.methods);
         return ref;
       };
       return decorate(fbRef);
