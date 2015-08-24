@@ -15,7 +15,7 @@ di.module 'pong-base'
 ]
 
 .service '$model', ['$encodeKey', '$promise', ($encodeKey, $promise)->
-  (fbRef, options={}, methods={})->
+  (fbRef, options={})->
     decorate = (ref)->
       ref.promise = 
         push: (obj)->
@@ -46,7 +46,7 @@ di.module 'pong-base'
         query = query.limitToFirst(limitTo||1)
 
       ref.single = -> fbRef.child('SINGLE')
-      extend ref, methods
+      extend ref, options.methods
       ref
 
     decorate fbRef
