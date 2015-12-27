@@ -66,6 +66,8 @@ angular.module 'pong-base', ['firebase']
 
     attrs.$observe 'by', update_scope
     attrs.$observe 'with', update_scope
+    attrs.$observe 'alsoWith', update_scope
+    attrs.$observe 'alsoAlsoWith', update_scope
     attrs.$observe 'limit', update_scope
 ]
 

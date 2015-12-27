@@ -109,6 +109,8 @@ angular.module('pong-base', ['firebase']).service('fbAuth', [
         };
         attrs.$observe('by', update_scope);
         attrs.$observe('with', update_scope);
+        attrs.$observe('alsoWith', update_scope);
+        attrs.$observe('alsoAlsoWith', update_scope);
         return attrs.$observe('limit', update_scope);
       }
     };

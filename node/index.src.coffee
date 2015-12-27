@@ -13,7 +13,7 @@ pongular.module 'pong-base' , []
 			console.log 'listening to', model.key()
 			if options.timestamp
 				model.orderByChild('created_on').equalTo(null).on 'child_added', (snap)->
-					console.log 'timestamp on', snap.ref().key()
+					# console.log 'timestamp on', snap.ref().key()
 					snap.ref().child('created_on').set( new Date().getTime() )
 			if options.initialize
 				model.orderByChild('is_initialized').equalTo(null).on 'child_added', (snap)->
@@ -46,7 +46,7 @@ pongular.module 'pong-base' , []
 .service 'startCounterHandler', (updateAllTargetCounters, getTargetRefs, updateTargetCounter)->
 	(model, counter_name, counter_options)->
 		counted_old_field = counter_name+'_counted'
-		console.log 'COUNTER: adding to', model.key(), 'countif', counter_options.countIf, 'named', counter_name
+		console.log 'COUNTER: adding to', model.key(), 'named', counter_name, 'countif', counter_options.countIf
 
 		update_handler = (snap,evtname)->
 			# console.log evtname, 'handler triggered on', model.key(), snap.key()
@@ -60,7 +60,7 @@ pongular.module 'pong-base' , []
 			# console.log 'remove handler triggered on', model.key(), snap.key()
 			rec = snap.val()
 
-			updateAllTargetCounters(counter_options.target, rec, rec[counter_name+'_counted'], 0)
+			updateAllTargetCounters(counter_name, counter_options.target, rec, rec[counter_name+'_counted'], 0)
 			snap.ref().child(counter_name+'_counted').remove() # in case the record wasnt actually deleted, just fell out of filter
 
 		query = if counter_options.countIf
@@ -71,7 +71,7 @@ pongular.module 'pong-base' , []
 
 		query.on 'child_added', (snap)-> setTimeout  (-> update_handler(snap,'added')), 0
 		query.on 'child_changed', (snap)-> setTimeout (-> update_handler(snap,'changed')), 0
-		query.on 'child_removed', (snap)-> setTimeout (-> remove_handler), 0
+		query.on 'child_removed', (snap)-> setTimeout (-> remove_handler(snap)), 0
 
 .service 'updateAllTargetCounters', (updateTargetCounter, getTargetRefs)->
 	(counter_name, target, rec, count_value_old, count_value_new)->
@@ -91,3 +91,4 @@ pongular.module 'pong-base' , []
 	(target,rec)->
 		targetRef = (typeof target=='function') && target(rec) || target
 		targetRefs = (targetRef.length) && targetRef || [targetRef,]
+

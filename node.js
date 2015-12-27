@@ -14,7 +14,6 @@ pongular.module('pong-base', []).service('Firebase', function() {
       console.log('listening to', model.key());
       if (options.timestamp) {
         model.orderByChild('created_on').equalTo(null).on('child_added', function(snap) {
-          console.log('timestamp on', snap.ref().key());
           return snap.ref().child('created_on').set(new Date().getTime());
         });
       }
@@ -81,7 +80,7 @@ pongular.module('pong-base', []).service('Firebase', function() {
   return function(model, counter_name, counter_options) {
     var counted_old_field, field, query, ref, remove_handler, update_handler, value;
     counted_old_field = counter_name + '_counted';
-    console.log('COUNTER: adding to', model.key(), 'countif', counter_options.countIf, 'named', counter_name);
+    console.log('COUNTER: adding to', model.key(), 'named', counter_name, 'countif', counter_options.countIf);
     update_handler = function(snap, evtname) {
       var count_value_new, rec;
       rec = snap.val();
@@ -93,7 +92,7 @@ pongular.module('pong-base', []).service('Firebase', function() {
     remove_handler = function(snap) {
       var rec;
       rec = snap.val();
-      updateAllTargetCounters(counter_options.target, rec, rec[counter_name + '_counted'], 0);
+      updateAllTargetCounters(counter_name, counter_options.target, rec, rec[counter_name + '_counted'], 0);
       return snap.ref().child(counter_name + '_counted').remove();
     };
     query = counter_options.countIf ? ((ref = counter_options.countIf, field = ref[0], value = ref[1], ref), model.orderByChild(field).equalTo(value)) : model;
@@ -109,7 +108,7 @@ pongular.module('pong-base', []).service('Firebase', function() {
     });
     return query.on('child_removed', function(snap) {
       return setTimeout((function() {
-        return remove_handler;
+        return remove_handler(snap);
       }), 0);
     });
   };
